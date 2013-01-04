@@ -31,6 +31,7 @@ class Player:
         bus.connect("message", self.on_message)
 
     def run(self):
+        self.player.set_state(gst.STATE_NULL)
         self.player.set_state(gst.STATE_PLAYING)
 
     def on_message(self, bus, message):
@@ -51,15 +52,13 @@ class Player:
 file = getcwd()+"/"+"type.wav"
 
 player = Player(file)
-loop = MainLoop()
 
 global oldtime
 oldtime=0
 
 def playwav():
     player.run()
-    loop.run()
-
+    
 class HookManager(Thread):
     """This is the main class. Instantiate it, and you can hand it KeyDown and KeyUp (functions in your own code) which execute to parse the pyxhookkeyevent class that is returned.
 
@@ -67,23 +66,27 @@ class HookManager(Thread):
     KeyDown = The function to execute when a key is pressed, if it returns anything. It hands the function an argument that is the pyxhookkeyevent class.
     KeyUp = The function to execute when a key is released, if it returns anything. It hands the function an argument that is the pyxhookkeyevent class.
     """
+    
     def keypressevent(self):
-        global oldtime
-        if time()-oldtime>0.01:
             playwav()
-            oldtime=time()
+            
     
     def __init__(self):
         Thread.__init__(self)
         self.finished = Event()
         
-        self.contextEventMask = [0,2]
+        self.contextEventMask = [0,2] #Initialise
         
         # Hook to our display.
 
         self.record_dpy = display.Display()
 
-    def run(self):
+        self.currreleased = True
+        self.prevreleased = True
+        self.currkey = 9999
+        self.prevkey = 9999
+        
+    def start(self): # Why was this named run?
         # Check if the extension is present
         if not self.record_dpy.has_extension("RECORD"):
             print "RECORD extension not found"
@@ -120,6 +123,7 @@ class HookManager(Thread):
     
     def HookKeyboard(self):
         self.contextEventMask[0] = X.KeyPress
+        self.contextEventMask[1] = X.KeyRelease
     
     def processevents(self, reply):
         if reply.category != record.FromServer:
@@ -131,14 +135,27 @@ class HookManager(Thread):
             # not an event
             return
         data = reply.data
+        
         while len(data):
             event, data = rq.EventField(None).parse_binary_value(data, self.record_dpy.display, None, None)
-            if event.type == X.KeyPress:
-                hookevent = self.keypressevent()
-
+            
+            if (event.type == X.KeyPress):
+               self.currkey = event.detail
+               self.currreleased = False
+            if (event.type == X.KeyRelease) and (event.detail == self.prevkey):
+               self.prevreleased = True
+            if (event.type == X.KeyRelease) and (event.detail == self.currkey):
+               self.currreleased = True   
+               
+            if ((event.type == X.KeyPress) and self.prevreleased) or ((event.type == X.KeyPress) and (event.detail != self.prevkey)):
+               self.keypressevent()
+               
+            self.prevkey = self.currkey
+            self.prevreleased = self.currreleased
+                              
 if __name__=='__main__':
     hm = HookManager()
     hm.HookKeyboard()
-    hm.start()
+    hm.start() #This start was used to begin run.
     sleep(100000)
     hm.cancel()
