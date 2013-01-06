@@ -2,7 +2,14 @@ PyTyping is a Linux program that plays sounds when typing; by default typewriter
 
 PyTyping can be used as auditory feedback for touch typing, or just because it sounds cool!
 
-DPENDENCIES
+AUTHORS
+Drawing heavily off code by Tim Alexander, Daniel Folkinshteyn, and Tiago Boldt Sousa
+
+pytyping itself programmed by:
+- Eviatar Bach
+- DW Bester
+
+DEPENDENCIES
 - python
 - python-xlib
 - python-gst0.10
