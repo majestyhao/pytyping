@@ -31,7 +31,9 @@ class Player:
         bus.connect("message", self.on_message)
 
     def run(self):
-        self.player.set_state(gst.STATE_NULL)
+        success, state, pending =  self.player.get_state(1)
+        if (state == gst.STATE_PLAYING) :
+            self.player.set_state(gst.STATE_READY)
         self.player.set_state(gst.STATE_PLAYING)
 
     def on_message(self, bus, message):
@@ -80,13 +82,14 @@ class HookManager(Thread):
         # Hook to our display.
 
         self.record_dpy = display.Display()
+        self.local_dpy = display.Display() #important for cancel() to work
 
         self.currreleased = True
         self.prevreleased = True
         self.currkey = 9999
         self.prevkey = 9999
         
-    def start(self): # Why was this named run?
+    def run(self):
         # Check if the extension is present
         if not self.record_dpy.has_extension("RECORD"):
             print "RECORD extension not found"
@@ -156,6 +159,13 @@ class HookManager(Thread):
 if __name__=='__main__':
     hm = HookManager()
     hm.HookKeyboard()
-    hm.start() #This start was used to begin run.
-    sleep(100000)
-    hm.cancel()
+    hm.start() #This start is used to begin run.
+    
+    sleep(1)
+    print "\nMinimize this window to leave the program running in the background."
+    x = ""
+    while (x != "QUIT"):
+        print "\nTyping QUIT in another window, won't end the program."
+        x = raw_input("To end the program, type QUIT in this window and hit enter: ")
+        if x == "QUIT":
+            hm.cancel()
